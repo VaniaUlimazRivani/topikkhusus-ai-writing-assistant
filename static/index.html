@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI Writing Assistant</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, sans-serif;
+      background: #f5f5f0;
+      color: #1a1a1a;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 16px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    header h1 {
+      font-size: 28px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    header p {
+      font-size: 14px;
+      color: #666;
+    }
+
+    .card {
+      background: #fff;
+      border: 1px solid #e0e0e0;
+      border-radius: 12px;
+      padding: 24px;
+      width: 100%;
+      max-width: 720px;
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: #555;
+      margin-bottom: 6px;
+    }
+
+    select, textarea, input[type="text"] {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: inherit;
+      background: #fafafa;
+      color: #1a1a1a;
+      outline: none;
+      transition: border-color .2s;
+      margin-bottom: 16px;
+    }
+
+    select:focus, textarea:focus, input:focus {
+      border-color: #888;
+      background: #fff;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 120px;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      background: #1a1a1a;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background .2s, opacity .2s;
+    }
+
+    button:hover { background: #333; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .output-card {
+      background: #fff;
+      border: 1px solid #e0e0e0;
+      border-radius: 12px;
+      padding: 24px;
+      width: 100%;
+      max-width: 720px;
+      display: none;
+    }
+
+    .output-card.visible { display: block; }
+
+    .output-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    .output-header span {
+      font-size: 13px;
+      font-weight: 500;
+      color: #555;
+    }
+
+    #copy-btn {
+      width: auto;
+      padding: 6px 14px;
+      font-size: 12px;
+      background: transparent;
+      color: #555;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+    }
+
+    #copy-btn:hover { background: #f5f5f0; }
+
+    #output {
+      font-size: 15px;
+      line-height: 1.8;
+      color: #1a1a1a;
+      white-space: pre-wrap;
+      min-height: 40px;
+    }
+
+    .cursor {
+      display: inline-block;
+      width: 2px;
+      height: 16px;
+      background: #1a1a1a;
+      margin-left: 2px;
+      animation: blink .7s infinite;
+      vertical-align: middle;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+
+    #mode-note {
+      font-size: 12px;
+      color: #999;
+      margin-top: -10px;
+      margin-bottom: 16px;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>✍️ AI Writing Assistant</h1>
+  <p>Tulis, perbaiki, atau ubah tone tulisanmu dengan AI</p>
+</header>
+
+<div class="card">
+  <div class="row">
+    <div>
+      <label for="mode">Mode</label>
+      <select id="mode" onchange="updateMode()">
+        <option value="write">✏️ Tulis dari awal</option>
+        <option value="improve">🔧 Perbaiki teks</option>
+        <option value="tone">🎨 Ubah tone</option>
+      </select>
+    </div>
+    <div>
+      <label for="tone">Tone / Gaya</label>
+      <select id="tone">
+        <option value="formal">Formal</option>
+        <option value="profesional">Profesional</option>
+        <option value="santai">Santai</option>
+        <option value="persuasif">Persuasif</option>
+        <option value="akademis">Akademis</option>
+        <option value="kreatif">Kreatif</option>
+      </select>
+    </div>
+  </div>
+
+  <div id="input-text-wrapper">
+    <label for="user-text">Teks kamu</label>
+    <textarea id="user-text" placeholder="Paste teks yang ingin diperbaiki atau diubah tone-nya..."></textarea>
+  </div>
+
+  <label for="instruction" id="instruction-label">Instruksi / Topik</label>
+  <p id="mode-note">Jelaskan apa yang ingin ditulis, misal: "Email penawaran kerjasama ke klien baru"</p>
+  <textarea id="instruction" rows="3" placeholder="Tulis instruksi atau topikmu di sini..."></textarea>
+
+  <button id="submit-btn" onclick="generate()">Generate ✨</button>
+</div>
+
+<div class="output-card" id="output-card">
+  <div class="output-header">
+    <span>Hasil</span>
+    <button id="copy-btn" onclick="copyOutput()">Salin</button>
+  </div>
+  <div id="output"></div>
+</div>
+
+<script>
+  function updateMode() {
+    const mode = document.getElementById('mode').value;
+    const wrapper = document.getElementById('input-text-wrapper');
+    const note = document.getElementById('mode-note');
+    const instrLabel = document.getElementById('instruction-label');
+
+    if (mode === 'write') {
+      wrapper.style.display = 'none';
+      instrLabel.textContent = 'Instruksi / Topik';
+      note.textContent = 'Jelaskan apa yang ingin ditulis, misal: "Email penawaran kerjasama ke klien baru"';
+    } else if (mode === 'improve') {
+      wrapper.style.display = 'block';
+      instrLabel.textContent = 'Instruksi tambahan (opsional)';
+      note.textContent = 'Misal: "Lebih ringkas" atau "Perjelas paragraf kedua"';
+    } else {
+      wrapper.style.display = 'block';
+      instrLabel.textContent = 'Instruksi tambahan (opsional)';
+      note.textContent = 'Teks akan diubah sesuai tone yang dipilih di atas';
+    }
+  }
+
+  updateMode();
+
+  async function generate() {
+    const mode = document.getElementById('mode').value;
+    const tone = document.getElementById('tone').value;
+    const userText = document.getElementById('user-text').value;
+    const instruction = document.getElementById('instruction').value;
+
+    if (mode === 'write' && !instruction.trim()) {
+      alert('Isi instruksi/topik dulu ya!'); return;
+    }
+    if ((mode === 'improve' || mode === 'tone') && !userText.trim()) {
+      alert('Paste teks kamu dulu ya!'); return;
+    }
+
+    const btn = document.getElementById('submit-btn');
+    const outputCard = document.getElementById('output-card');
+    const output = document.getElementById('output');
+
+    btn.disabled = true;
+    btn.textContent = 'Generating...';
+    outputCard.classList.add('visible');
+    output.innerHTML = '<span class="cursor"></span>';
+
+    try {
+      const res = await fetch('/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode, tone, user_text: userText, instruction })
+      });
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let result = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        result += decoder.decode(value, { stream: true });
+        output.innerHTML = result + '<span class="cursor"></span>';
+        window.scrollTo(0, document.body.scrollHeight);
+      }
+
+      output.innerHTML = result;
+
+    } catch (e) {
+      output.textContent = 'Terjadi error. Cek terminal dan pastikan server berjalan.';
+    }
+
+    btn.disabled = false;
+    btn.textContent = 'Generate ✨';
+  }
+
+  function copyOutput() {
+    const text = document.getElementById('output').textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      const btn = document.getElementById('copy-btn');
+      btn.textContent = 'Tersalin!';
+      setTimeout(() => btn.textContent = 'Salin', 2000);
+    });
+  }
+</script>
+
+</body>
+</html>
